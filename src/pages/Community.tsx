@@ -22,23 +22,18 @@ export default function Community() {
     if (!user) return;
     const load = async () => {
       const [postsRes, likesRes] = await Promise.all([
-        supabase.from("community_posts").select("*, profiles!community_posts_user_id_fkey(full_name, avatar_url)").order("created_at", { ascending: false }).limit(50),
+        supabase.from("community_posts").select("*").order("created_at", { ascending: false }).limit(50),
         supabase.from("post_likes").select("post_id").eq("user_id", user.id),
       ]);
-      // If the join fails, fall back to separate profile fetch
-      let postsList = postsRes.data || [];
-      if (postsRes.error) {
-        const { data: plainPosts } = await supabase.from("community_posts").select("*").order("created_at", { ascending: false }).limit(50);
-        postsList = plainPosts || [];
-        const userIds = [...new Set(postsList.map((p: any) => p.user_id))];
-        if (userIds.length) {
-          const { data: profs } = await supabase.from("profiles").select("user_id, full_name, avatar_url").in("user_id", userIds);
-          const map: Record<string, any> = {};
-          (profs || []).forEach((p: any) => { map[p.user_id] = p; });
-          postsList = postsList.map((p: any) => ({ ...p, profiles: map[p.user_id] || null }));
-        }
+      const postsList = postsRes.data || [];
+      // Fetch profiles for authors
+      const userIds = [...new Set(postsList.map((p: any) => p.user_id))];
+      let profileMap: Record<string, any> = {};
+      if (userIds.length) {
+        const { data: profs } = await supabase.from("profiles").select("user_id, full_name, avatar_url").in("user_id", userIds);
+        (profs || []).forEach((p: any) => { profileMap[p.user_id] = p; });
       }
-      setPosts(postsList);
+      setPosts(postsList.map((p: any) => ({ ...p, _profile: profileMap[p.user_id] || null })));
       setLikedPosts(new Set((likesRes.data || []).map((l: any) => l.post_id)));
       setLoading(false);
     };
