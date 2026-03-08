@@ -44,9 +44,8 @@ export default function Community() {
     if (!newPost.trim() || !user) return;
     const { data, error } = await supabase.from("community_posts").insert({ user_id: user.id, content: newPost.trim() }).select().single();
     if (error) { toast.error(error.message); return; }
-    // Get current user profile for display
     const { data: prof } = await supabase.from("profiles").select("full_name, avatar_url").eq("user_id", user.id).single();
-    setPosts([{ ...data, profiles: prof }, ...posts]);
+    setPosts([{ ...data, _profile: prof }, ...posts]);
     setNewPost("");
     toast.success("Posted!");
   };
@@ -93,7 +92,7 @@ export default function Community() {
           </div>
 
           {posts.map((post) => {
-            const author = getAuthorName(post.profiles);
+            const author = getAuthorName(post._profile);
             return (
               <div key={post.id} className="glass-card rounded-xl p-4">
                 <div className="flex items-center gap-3 mb-3">
