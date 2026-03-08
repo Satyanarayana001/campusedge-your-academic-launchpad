@@ -1,10 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, CalendarDays, Calculator, Target, BriefcaseBusiness,
-  Building2, Users, ChevronLeft, ChevronRight, Moon, Sun, Flame, Star, Medal,
+  Building2, Users, ChevronLeft, ChevronRight, Moon, Sun, Flame, Star, Medal, LogOut,
 } from "lucide-react";
-import { studentProfile } from "@/lib/mockData";
+import { useAuth } from "@/contexts/AuthContext";
+import { supabase } from "@/integrations/supabase/client";
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -19,12 +20,28 @@ const navItems = [
 export default function AppLayout({ children }: { children: React.ReactNode }) {
   const [collapsed, setCollapsed] = useState(false);
   const [dark, setDark] = useState(false);
+  const [profile, setProfile] = useState<any>(null);
   const location = useLocation();
+  const { signOut, user } = useAuth();
+
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from("profiles")
+      .select("*")
+      .eq("user_id", user.id)
+      .single()
+      .then(({ data }) => setProfile(data));
+  }, [user]);
 
   const toggleDark = () => {
     setDark(!dark);
     document.documentElement.classList.toggle("dark");
   };
+
+  const streak = profile?.streak ?? 0;
+  const xp = profile?.xp ?? 0;
+  const badges = profile?.badges ?? 0;
 
   return (
     <div className="flex min-h-screen w-full">
@@ -59,7 +76,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
           })}
         </nav>
 
-        <div className="p-2 border-t border-sidebar-border">
+        <div className="p-2 border-t border-sidebar-border space-y-1">
+          <button onClick={signOut} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors ${collapsed ? "justify-center" : ""}`}>
+            <LogOut className="h-4 w-4" />
+            {!collapsed && <span>Sign Out</span>}
+          </button>
           <button onClick={() => setCollapsed(!collapsed)} className="w-full flex items-center justify-center p-2 rounded-lg text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors">
             {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </button>
@@ -67,24 +88,24 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
       </aside>
 
       {/* Main Content */}
-      <div className={`flex-1 flex flex-col min-h-screen ${collapsed ? "lg:ml-0" : "lg:ml-0"} ml-16 lg:ml-0`}>
+      <div className={`flex-1 flex flex-col min-h-screen ml-16 lg:ml-0`}>
         {/* Gamification Strip */}
         <header className="sticky top-0 z-20 bg-background/80 backdrop-blur-xl border-b border-border">
           <div className="flex items-center justify-between px-4 lg:px-6 h-14">
             <div className="flex items-center gap-4 lg:gap-6">
               <div className="flex items-center gap-1.5 text-sm font-medium">
                 <Flame className="h-4 w-4 text-accent" />
-                <span className="text-foreground">{studentProfile.streak}</span>
+                <span className="text-foreground">{streak}</span>
                 <span className="text-muted-foreground hidden sm:inline">Streak</span>
               </div>
               <div className="flex items-center gap-1.5 text-sm font-medium">
                 <Star className="h-4 w-4 text-warning" />
-                <span className="text-foreground">{studentProfile.xp.toLocaleString()}</span>
+                <span className="text-foreground">{xp.toLocaleString()}</span>
                 <span className="text-muted-foreground hidden sm:inline">XP</span>
               </div>
               <div className="flex items-center gap-1.5 text-sm font-medium">
                 <Medal className="h-4 w-4 text-primary" />
-                <span className="text-foreground">{studentProfile.badges}</span>
+                <span className="text-foreground">{badges}</span>
                 <span className="text-muted-foreground hidden sm:inline">Badges</span>
               </div>
             </div>
