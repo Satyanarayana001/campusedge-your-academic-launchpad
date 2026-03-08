@@ -5,10 +5,15 @@ import { studyGroups, seniorTips } from "@/lib/mockData";
 import { Heart, MessageCircle, Users, Lightbulb, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
+function getAuthorName(profile: any) {
+  if (profile?.full_name && !profile.full_name.includes("@")) return profile.full_name;
+  if (profile?.full_name?.includes("@")) return profile.full_name.split("@")[0];
+  return "Student";
+}
+
 export default function Community() {
   const { user } = useAuth();
   const [posts, setPosts] = useState<any[]>([]);
-  const [profiles, setProfiles] = useState<Record<string, any>>({});
   const [newPost, setNewPost] = useState("");
   const [loading, setLoading] = useState(true);
   const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
@@ -17,21 +22,24 @@ export default function Community() {
     if (!user) return;
     const load = async () => {
       const [postsRes, likesRes] = await Promise.all([
-        supabase.from("community_posts").select("*").order("created_at", { ascending: false }).limit(50),
+        supabase.from("community_posts").select("*, profiles!community_posts_user_id_fkey(full_name, avatar_url)").order("created_at", { ascending: false }).limit(50),
         supabase.from("post_likes").select("post_id").eq("user_id", user.id),
       ]);
-      const postsList = postsRes.data || [];
+      // If the join fails, fall back to separate profile fetch
+      let postsList = postsRes.data || [];
+      if (postsRes.error) {
+        const { data: plainPosts } = await supabase.from("community_posts").select("*").order("created_at", { ascending: false }).limit(50);
+        postsList = plainPosts || [];
+        const userIds = [...new Set(postsList.map((p: any) => p.user_id))];
+        if (userIds.length) {
+          const { data: profs } = await supabase.from("profiles").select("user_id, full_name, avatar_url").in("user_id", userIds);
+          const map: Record<string, any> = {};
+          (profs || []).forEach((p: any) => { map[p.user_id] = p; });
+          postsList = postsList.map((p: any) => ({ ...p, profiles: map[p.user_id] || null }));
+        }
+      }
       setPosts(postsList);
       setLikedPosts(new Set((likesRes.data || []).map((l: any) => l.post_id)));
-
-      // Fetch profiles for post authors
-      const userIds = [...new Set(postsList.map(p => p.user_id))];
-      if (userIds.length) {
-        const { data: profs } = await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds);
-        const map: Record<string, any> = {};
-        (profs || []).forEach(p => { map[p.user_id] = p; });
-        setProfiles(map);
-      }
       setLoading(false);
     };
     load();
@@ -41,8 +49,9 @@ export default function Community() {
     if (!newPost.trim() || !user) return;
     const { data, error } = await supabase.from("community_posts").insert({ user_id: user.id, content: newPost.trim() }).select().single();
     if (error) { toast.error(error.message); return; }
-    setPosts([data, ...posts]);
-    setProfiles({ ...profiles, [user.id]: profiles[user.id] || { full_name: user.email } });
+    // Get current user profile for display
+    const { data: prof } = await supabase.from("profiles").select("full_name, avatar_url").eq("user_id", user.id).single();
+    setPosts([{ ...data, profiles: prof }, ...posts]);
     setNewPost("");
     toast.success("Posted!");
   };
@@ -80,7 +89,6 @@ export default function Community() {
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         <div className="lg:col-span-2 space-y-4">
-          {/* New Post */}
           <div className="glass-card rounded-xl p-4">
             <textarea value={newPost} onChange={(e) => setNewPost(e.target.value)} placeholder="Share something with the community..."
               className="w-full bg-muted rounded-lg p-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-2 focus:ring-ring resize-none h-20" />
@@ -89,9 +97,8 @@ export default function Community() {
             </div>
           </div>
 
-          {/* Posts */}
           {posts.map((post) => {
-            const author = profiles[post.user_id]?.full_name || "Unknown";
+            const author = getAuthorName(post.profiles);
             return (
               <div key={post.id} className="glass-card rounded-xl p-4">
                 <div className="flex items-center gap-3 mb-3">
@@ -122,7 +129,6 @@ export default function Community() {
           )}
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-6">
           <div className="glass-card rounded-xl p-5">
             <h2 className="font-display font-semibold text-foreground text-lg mb-4 flex items-center gap-2">

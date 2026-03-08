@@ -24,15 +24,27 @@ export default function AuthPage() {
         toast.success("Welcome back!");
         navigate("/");
       } else {
-        const { error } = await supabase.auth.signUp({
+        if (!fullName.trim() || fullName.trim().length < 2) {
+          toast.error("Please enter your full name (at least 2 characters)");
+          setLoading(false);
+          return;
+        }
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
-            data: { full_name: fullName },
+            data: { full_name: fullName.trim() },
             emailRedirectTo: window.location.origin,
           },
         });
         if (error) throw error;
+        // Update profile with actual full name
+        if (data.user) {
+          await supabase.from("profiles").upsert({
+            user_id: data.user.id,
+            full_name: fullName.trim(),
+          }, { onConflict: "user_id" });
+        }
         toast.success("Account created! Check your email to verify.");
       }
     } catch (error: any) {
@@ -61,7 +73,6 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-md">
-        {/* Logo */}
         <div className="text-center mb-8">
           <div className="inline-flex items-center gap-3 mb-4">
             <div className="h-12 w-12 rounded-xl gradient-accent flex items-center justify-center">
@@ -77,7 +88,6 @@ export default function AuthPage() {
             {isLogin ? "Welcome back" : "Create your account"}
           </h2>
 
-          {/* Google Sign In */}
           <button
             onClick={handleGoogleSignIn}
             disabled={loading}
@@ -107,10 +117,11 @@ export default function AuthPage() {
                 <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <input
                   type="text"
-                  placeholder="Full Name"
+                  placeholder="Full Name (required)"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
-                  required={!isLogin}
+                  required
+                  minLength={2}
                   className="w-full pl-10 pr-4 py-3 rounded-xl bg-muted border border-border text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring"
                 />
               </div>
