@@ -12,6 +12,8 @@ import SkillTracker from "./pages/SkillTracker";
 import PlacementPrep from "./pages/PlacementPrep";
 import CampusDrives from "./pages/CampusDrives";
 import Community from "./pages/Community";
+import PlacementResources from "./pages/PlacementResources";
+import ProfileEdit from "./pages/ProfileEdit";
 import AuthPage from "./pages/AuthPage";
 import NotFound from "./pages/NotFound";
 
@@ -47,6 +49,8 @@ function ProtectedRoutes() {
         <Route path="/prep" element={<PlacementPrep />} />
         <Route path="/drives" element={<CampusDrives />} />
         <Route path="/community" element={<Community />} />
+        <Route path="/resources" element={<PlacementResources />} />
+        <Route path="/profile" element={<ProfileEdit />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </AppLayout>
