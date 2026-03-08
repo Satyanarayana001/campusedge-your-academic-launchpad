@@ -1,74 +1,129 @@
-import { useState } from "react";
-import { communityPosts, studyGroups, seniorTips } from "@/lib/mockData";
-import { Heart, MessageCircle, Users, Lightbulb } from "lucide-react";
+import { useState, useEffect } from "react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/contexts/AuthContext";
+import { studyGroups, seniorTips } from "@/lib/mockData";
+import { Heart, MessageCircle, Users, Lightbulb, Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function Community() {
-  const [posts, setPosts] = useState(communityPosts);
+  const { user } = useAuth();
+  const [posts, setPosts] = useState<any[]>([]);
+  const [profiles, setProfiles] = useState<Record<string, any>>({});
   const [newPost, setNewPost] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [likedPosts, setLikedPosts] = useState<Set<string>>(new Set());
 
-  const handleLike = (id: number) => {
-    setPosts(posts.map((p) => p.id === id ? { ...p, likes: p.likes + 1 } : p));
-  };
+  useEffect(() => {
+    if (!user) return;
+    const load = async () => {
+      const [postsRes, likesRes] = await Promise.all([
+        supabase.from("community_posts").select("*").order("created_at", { ascending: false }).limit(50),
+        supabase.from("post_likes").select("post_id").eq("user_id", user.id),
+      ]);
+      const postsList = postsRes.data || [];
+      setPosts(postsList);
+      setLikedPosts(new Set((likesRes.data || []).map((l: any) => l.post_id)));
 
-  const handlePost = () => {
-    if (!newPost.trim()) return;
-    setPosts([{
-      id: Date.now(), author: "You", avatar: "YO", content: newPost,
-      likes: 0, comments: 0, time: "Just now",
-    }, ...posts]);
+      // Fetch profiles for post authors
+      const userIds = [...new Set(postsList.map(p => p.user_id))];
+      if (userIds.length) {
+        const { data: profs } = await supabase.from("profiles").select("user_id, full_name").in("user_id", userIds);
+        const map: Record<string, any> = {};
+        (profs || []).forEach(p => { map[p.user_id] = p; });
+        setProfiles(map);
+      }
+      setLoading(false);
+    };
+    load();
+  }, [user]);
+
+  const handlePost = async () => {
+    if (!newPost.trim() || !user) return;
+    const { data, error } = await supabase.from("community_posts").insert({ user_id: user.id, content: newPost.trim() }).select().single();
+    if (error) { toast.error(error.message); return; }
+    setPosts([data, ...posts]);
+    setProfiles({ ...profiles, [user.id]: profiles[user.id] || { full_name: user.email } });
     setNewPost("");
+    toast.success("Posted!");
   };
+
+  const handleLike = async (postId: string) => {
+    if (!user) return;
+    if (likedPosts.has(postId)) {
+      await supabase.from("post_likes").delete().eq("post_id", postId).eq("user_id", user.id);
+      setLikedPosts(prev => { const n = new Set(prev); n.delete(postId); return n; });
+      setPosts(posts.map(p => p.id === postId ? { ...p, likes: Math.max(0, (p.likes || 0) - 1) } : p));
+      await supabase.from("community_posts").update({ likes: Math.max(0, posts.find(p => p.id === postId)?.likes - 1 || 0) }).eq("id", postId);
+    } else {
+      await supabase.from("post_likes").insert({ post_id: postId, user_id: user.id });
+      setLikedPosts(prev => new Set(prev).add(postId));
+      setPosts(posts.map(p => p.id === postId ? { ...p, likes: (p.likes || 0) + 1 } : p));
+      await supabase.from("community_posts").update({ likes: (posts.find(p => p.id === postId)?.likes || 0) + 1 }).eq("id", postId);
+    }
+  };
+
+  const getInitials = (name: string) => name?.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase() || "??";
+  const getTimeAgo = (dateStr: string) => {
+    const diff = Date.now() - new Date(dateStr).getTime();
+    const mins = Math.floor(diff / 60000);
+    if (mins < 60) return `${mins}m ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs}h ago`;
+    return `${Math.floor(hrs / 24)}d ago`;
+  };
+
+  if (loading) return <div className="flex items-center justify-center h-64"><Loader2 className="h-8 w-8 animate-spin text-muted-foreground" /></div>;
 
   return (
     <div className="space-y-6 max-w-7xl mx-auto">
       <h1 className="text-2xl lg:text-3xl font-display font-bold text-foreground">Community</h1>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        {/* Feed */}
         <div className="lg:col-span-2 space-y-4">
           {/* New Post */}
           <div className="glass-card rounded-xl p-4">
-            <textarea
-              value={newPost}
-              onChange={(e) => setNewPost(e.target.value)}
-              placeholder="Share something with the community..."
-              className="w-full bg-muted rounded-lg p-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-2 focus:ring-ring resize-none h-20"
-            />
+            <textarea value={newPost} onChange={(e) => setNewPost(e.target.value)} placeholder="Share something with the community..."
+              className="w-full bg-muted rounded-lg p-3 text-sm text-foreground placeholder:text-muted-foreground border border-border focus:outline-none focus:ring-2 focus:ring-ring resize-none h-20" />
             <div className="flex justify-end mt-2">
-              <button onClick={handlePost} className="px-4 py-2 rounded-lg gradient-accent text-accent-foreground text-sm font-medium transition-transform hover:scale-105">
-                Post
-              </button>
+              <button onClick={handlePost} className="px-4 py-2 rounded-lg gradient-accent text-accent-foreground text-sm font-medium transition-transform hover:scale-105">Post</button>
             </div>
           </div>
 
           {/* Posts */}
-          {posts.map((post) => (
-            <div key={post.id} className="glass-card rounded-xl p-4">
-              <div className="flex items-center gap-3 mb-3">
-                <div className="h-9 w-9 rounded-full gradient-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
-                  {post.avatar}
+          {posts.map((post) => {
+            const author = profiles[post.user_id]?.full_name || "Unknown";
+            return (
+              <div key={post.id} className="glass-card rounded-xl p-4">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="h-9 w-9 rounded-full gradient-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
+                    {getInitials(author)}
+                  </div>
+                  <div>
+                    <p className="text-sm font-medium text-foreground">{author}</p>
+                    <p className="text-xs text-muted-foreground">{getTimeAgo(post.created_at)}</p>
+                  </div>
                 </div>
-                <div>
-                  <p className="text-sm font-medium text-foreground">{post.author}</p>
-                  <p className="text-xs text-muted-foreground">{post.time}</p>
+                <p className="text-sm text-foreground leading-relaxed">{post.content}</p>
+                <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border/50">
+                  <button onClick={() => handleLike(post.id)} className={`flex items-center gap-1.5 text-xs transition-colors ${likedPosts.has(post.id) ? "text-destructive" : "text-muted-foreground hover:text-destructive"}`}>
+                    <Heart className={`h-4 w-4 ${likedPosts.has(post.id) ? "fill-current" : ""}`} /> {post.likes || 0}
+                  </button>
+                  <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                    <MessageCircle className="h-4 w-4" /> 0
+                  </span>
                 </div>
               </div>
-              <p className="text-sm text-foreground leading-relaxed">{post.content}</p>
-              <div className="flex items-center gap-4 mt-3 pt-3 border-t border-border/50">
-                <button onClick={() => handleLike(post.id)} className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-destructive transition-colors">
-                  <Heart className="h-4 w-4" /> {post.likes}
-                </button>
-                <button className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-primary transition-colors">
-                  <MessageCircle className="h-4 w-4" /> {post.comments}
-                </button>
-              </div>
+            );
+          })}
+          {posts.length === 0 && (
+            <div className="glass-card rounded-xl p-8 text-center text-muted-foreground">
+              <p>No posts yet. Be the first to share!</p>
             </div>
-          ))}
+          )}
         </div>
 
         {/* Sidebar */}
         <div className="space-y-6">
-          {/* Study Groups */}
           <div className="glass-card rounded-xl p-5">
             <h2 className="font-display font-semibold text-foreground text-lg mb-4 flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" /> Study Groups
@@ -81,15 +136,12 @@ export default function Community() {
                     <p className="text-sm font-medium text-foreground">{group.name}</p>
                     <p className="text-xs text-muted-foreground">{group.members} members</p>
                   </div>
-                  <button className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors">
-                    Join
-                  </button>
+                  <button className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium hover:bg-primary/90 transition-colors">Join</button>
                 </div>
               ))}
             </div>
           </div>
 
-          {/* Senior Tips */}
           <div className="glass-card rounded-xl p-5">
             <h2 className="font-display font-semibold text-foreground text-lg mb-4 flex items-center gap-2">
               <Lightbulb className="h-5 w-5 text-accent" /> Senior Tips
@@ -98,9 +150,7 @@ export default function Community() {
               {seniorTips.map((tip) => (
                 <div key={tip.name} className="space-y-2">
                   <div className="flex items-center gap-2">
-                    <div className="h-7 w-7 rounded-full gradient-accent flex items-center justify-center text-accent-foreground text-xs font-bold">
-                      {tip.avatar}
-                    </div>
+                    <div className="h-7 w-7 rounded-full gradient-accent flex items-center justify-center text-accent-foreground text-xs font-bold">{tip.avatar}</div>
                     <span className="text-sm font-medium text-foreground">{tip.name}</span>
                   </div>
                   <p className="text-xs text-muted-foreground leading-relaxed pl-9">"{tip.tip}"</p>
