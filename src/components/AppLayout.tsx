@@ -3,6 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, CalendarDays, Calculator, Target, BriefcaseBusiness,
   Building2, Users, ChevronLeft, ChevronRight, Moon, Sun, Flame, Star, Medal, LogOut,
+  BookOpen, UserCircle,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
@@ -14,6 +15,7 @@ const navItems = [
   { title: "Skill Tracker", url: "/skills", icon: Target },
   { title: "Placement Prep", url: "/prep", icon: BriefcaseBusiness },
   { title: "Campus Drives", url: "/drives", icon: Building2 },
+  { title: "Resources", url: "/resources", icon: BookOpen },
   { title: "Community", url: "/community", icon: Users },
 ];
 
@@ -77,6 +79,10 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
         </nav>
 
         <div className="p-2 border-t border-sidebar-border space-y-1">
+          <Link to="/profile" className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors ${collapsed ? "justify-center" : ""}`}>
+            <UserCircle className="h-4 w-4" />
+            {!collapsed && <span>Edit Profile</span>}
+          </Link>
           <button onClick={signOut} className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm text-sidebar-foreground/50 hover:text-sidebar-foreground hover:bg-sidebar-accent/50 transition-colors ${collapsed ? "justify-center" : ""}`}>
             <LogOut className="h-4 w-4" />
             {!collapsed && <span>Sign Out</span>}
