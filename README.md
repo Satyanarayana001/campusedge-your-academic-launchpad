@@ -1,73 +1,87 @@
-# Welcome to your Lovable project
+# CampusEdge — Your Academic Launchpad
 
-## Project info
+**Student productivity & placement hub for B.Tech students.**
+Manage academics, track skills, and prepare for campus placements — all in one place.
 
-**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
+🔗 **Live App**: [academic-edge.lovable.app](https://academic-edge.lovable.app/)
+📦 **Repo**: [campusedge-your-academic-launchpad](https://github.com/Satyanarayana001/campusedge-your-academic-launchpad)
 
-## How can I edit this code?
+---
 
-There are several ways of editing your application.
+## ✨ Features
 
-**Use Lovable**
+- **Dashboard** — quick overview of tasks, progress, and stats
+- **Daily Planner** — add, prioritize, and track daily tasks
+- **CGPA Calculator** — compute semester/overall CGPA
+- **Skill Tracker** — track skills and personal projects
+- **Placement Prep** — prep material and practice tracking
+- **Campus Drives** — track upcoming/ongoing recruitment drives
+- **Placement Resources** — curated, searchable prep resources (guides, platforms)
+- **Community** — student community/discussion space
+- **Profile & Auth** — user accounts via Supabase auth, editable profile
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
+## 🛠️ Tech Stack
 
-Changes made via Lovable will be committed automatically to this repo.
+- **Frontend**: React + TypeScript + Vite
+- **UI**: shadcn-ui, Radix UI, Tailwind CSS, Framer Motion
+- **State/Data**: TanStack Query, React Hook Form, Zod
+- **Backend**: Supabase (auth + database)
+- **Testing**: Vitest, Testing Library
+- **Tooling**: ESLint, bun/npm
 
-**Use your preferred IDE**
+## 🚀 Getting Started
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+Requires Node.js & npm ([install via nvm](https://github.com/nvm-sh/nvm#installing-and-updating)).
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+# Clone the repository
+git clone https://github.com/Satyanarayana001/campusedge-your-academic-launchpad.git
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+# Navigate to the project directory
+cd campusedge-your-academic-launchpad
 
-# Step 3: Install the necessary dependencies.
+# Install dependencies
 npm i
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+# Start the dev server
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+### Other scripts
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+```sh
+npm run build       # production build
+npm run build:dev   # development-mode build
+npm run preview     # preview production build
+npm run lint         # run ESLint
+npm run test        # run tests once
+npm run test:watch  # run tests in watch mode
+```
 
-**Use GitHub Codespaces**
+## 🔑 Environment Setup
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+This project uses Supabase for auth and data. Add your Supabase project credentials in a `.env` file:
 
-## What technologies are used for this project?
+```
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
+```
 
-This project is built with:
+## 📁 Project Structure
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+```
+src/
+├── components/       # UI components (incl. shadcn-ui primitives)
+├── contexts/         # AuthContext
+├── hooks/            # custom hooks
+├── integrations/     # Supabase & Lovable integrations
+├── lib/              # mock data, placement resources, utils
+├── pages/            # Dashboard, DailyPlanner, CGPACalculator, SkillTracker,
+│                      # PlacementPrep, CampusDrives, Community, PlacementResources,
+│                      # ProfileEdit, AuthPage
+└── App.tsx           # routes & providers
+```
 
-## How can I deploy this project?
+## 📄 License
 
-Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+No license specified.
