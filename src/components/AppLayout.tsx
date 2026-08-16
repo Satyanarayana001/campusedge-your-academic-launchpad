@@ -127,10 +127,11 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <span className="hidden sm:inline">Live</span>
               </span>
               <button onClick={toggleDark} className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
-
-              {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
+                {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
+
         </header>
 
         <main className="flex-1 p-4 lg:p-6 overflow-y-auto">
