@@ -4,6 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { BookOpen, Code, Mic, Building2, CheckCircle2, Circle, Clock, AlertTriangle, Plus, Loader2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
+import AdSlot from "@/components/AdSlot";
+import { AD_SLOTS } from "@/lib/ads";
+
 
 const quickActions = [
   { label: "Study", icon: BookOpen, color: "bg-primary text-primary-foreground", link: "/planner" },
