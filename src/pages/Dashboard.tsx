@@ -43,7 +43,26 @@ export default function Dashboard() {
       setLoading(false);
     };
     load();
+
+    const channel = supabase
+      .channel("dashboard-tasks-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "tasks", filter: `user_id=eq.${user.id}` }, (payload) => {
+        if (payload.eventType === "DELETE") {
+          setTasks((prev) => prev.filter((t) => t.id !== (payload.old as any).id));
+          return;
+        }
+        const row: any = payload.new;
+        setTasks((prev) => {
+          const exists = prev.some((t) => t.id === row.id);
+          if (exists) return prev.map((t) => (t.id === row.id ? { ...t, ...row } : t));
+          return [row, ...prev];
+        });
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
+
 
   const addTask = async () => {
     if (!newTask.trim() || !user) return;

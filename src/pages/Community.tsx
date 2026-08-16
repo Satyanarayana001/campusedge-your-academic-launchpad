@@ -38,7 +38,28 @@ export default function Community() {
       setLoading(false);
     };
     load();
+
+    const channel = supabase
+      .channel("community-realtime")
+      .on("postgres_changes", { event: "*", schema: "public", table: "community_posts" }, async (payload) => {
+        if (payload.eventType === "DELETE") {
+          setPosts((prev) => prev.filter((p) => p.id !== (payload.old as any).id));
+          return;
+        }
+        const row: any = payload.new;
+        const { data: prof } = await supabase
+          .from("profiles").select("user_id, full_name, avatar_url").eq("user_id", row.user_id).maybeSingle();
+        setPosts((prev) => {
+          const exists = prev.some((p) => p.id === row.id);
+          if (exists) return prev.map((p) => (p.id === row.id ? { ...p, ...row, _profile: p._profile || prof } : p));
+          return [{ ...row, _profile: prof }, ...prev];
+        });
+      })
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
+
 
   const handlePost = async () => {
     if (!newPost.trim() || !user) return;
