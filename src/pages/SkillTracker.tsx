@@ -16,23 +16,25 @@ export default function SkillTracker() {
   const [newSkill, setNewSkill] = useState("");
   const [newSkillLevel, setNewSkillLevel] = useState(50);
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!user) return;
-    const load = async () => {
-      const [skillsRes, dsaRes, certsRes, projRes] = await Promise.all([
-        supabase.from("skills").select("*").eq("user_id", user.id).order("level", { ascending: false }),
-        supabase.from("dsa_progress").select("*").eq("user_id", user.id).single(),
-        supabase.from("certifications").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
-        supabase.from("projects").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
-      ]);
-      setSkills(skillsRes.data || []);
-      setDsaProgress(dsaRes.data);
-      setCertifications(certsRes.data || []);
-      setProjects(projRes.data || []);
-      setLoading(false);
-    };
-    load();
+    const [skillsRes, dsaRes, certsRes, projRes] = await Promise.all([
+      supabase.from("skills").select("*").eq("user_id", user.id).order("level", { ascending: false }),
+      supabase.from("dsa_progress").select("*").eq("user_id", user.id).maybeSingle(),
+      supabase.from("certifications").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
+      supabase.from("projects").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
+    ]);
+    setSkills(skillsRes.data || []);
+    setDsaProgress(dsaRes.data);
+    setCertifications(certsRes.data || []);
+    setProjects(projRes.data || []);
+    setLoading(false);
   }, [user]);
+
+  useEffect(() => { load(); }, [load]);
+
+  useRealtimeSync("skills", ["skills", "dsa_progress", "certifications", "projects"], load, !!user);
+
 
   const addSkill = async () => {
     if (!newSkill.trim() || !user) return;
