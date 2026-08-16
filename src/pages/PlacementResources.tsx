@@ -1,6 +1,7 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import {
   Search, ExternalLink, Bookmark, BookmarkCheck, CheckCircle2, Circle,
   Loader2, Building2, Map, CalendarDays, Smartphone, GraduationCap,
@@ -23,19 +24,23 @@ export default function PlacementResources() {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<any>(null);
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!user) return;
-    Promise.all([
+    const [bRes, cRes, pRes] = await Promise.all([
       supabase.from("resource_bookmarks").select("resource_id").eq("user_id", user.id),
       supabase.from("resource_completions").select("resource_id").eq("user_id", user.id),
-      supabase.from("profiles").select("branch, semester, xp").eq("user_id", user.id).single(),
-    ]).then(([bRes, cRes, pRes]) => {
-      setBookmarks(new Set((bRes.data || []).map((b: any) => b.resource_id)));
-      setCompletions(new Set((cRes.data || []).map((c: any) => c.resource_id)));
-      setProfile(pRes.data);
-      setLoading(false);
-    });
+      supabase.from("profiles").select("branch, semester, xp").eq("user_id", user.id).maybeSingle(),
+    ]);
+    setBookmarks(new Set((bRes.data || []).map((b: any) => b.resource_id)));
+    setCompletions(new Set((cRes.data || []).map((c: any) => c.resource_id)));
+    setProfile(pRes.data);
+    setLoading(false);
   }, [user]);
+
+  useEffect(() => { load(); }, [load]);
+
+  useRealtimeSync("resources", ["resource_bookmarks", "resource_completions", "profiles"], load, !!user);
+
 
   const toggleBookmark = async (resourceId: string) => {
     if (!user) return;

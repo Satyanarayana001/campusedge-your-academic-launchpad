@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Link, useLocation } from "react-router-dom";
 import {
   LayoutDashboard, CalendarDays, Calculator, Target, BriefcaseBusiness,
@@ -7,6 +7,8 @@ import {
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
+
 
 const navItems = [
   { title: "Dashboard", url: "/", icon: LayoutDashboard },
@@ -26,15 +28,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { signOut, user } = useAuth();
 
-  useEffect(() => {
+  const loadProfile = useCallback(async () => {
     if (!user) return;
-    supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", user.id)
-      .single()
-      .then(({ data }) => setProfile(data));
+    const { data } = await supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle();
+    setProfile(data);
   }, [user]);
+
+  useEffect(() => { loadProfile(); }, [loadProfile]);
+
+  useRealtimeSync("layout-profile", ["profiles"], loadProfile, !!user);
+
 
   const toggleDark = () => {
     setDark(!dark);
@@ -115,10 +118,20 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
                 <span className="text-muted-foreground hidden sm:inline">Badges</span>
               </div>
             </div>
-            <button onClick={toggleDark} className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
-              {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
-            </button>
+            <div className="flex items-center gap-2">
+              <span className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-success/10 text-success text-xs font-medium">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-success opacity-75 animate-ping" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
+                </span>
+                <span className="hidden sm:inline">Live</span>
+              </span>
+              <button onClick={toggleDark} className="p-2 rounded-lg hover:bg-muted transition-colors text-muted-foreground hover:text-foreground">
+                {dark ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
+
         </header>
 
         <main className="flex-1 p-4 lg:p-6 overflow-y-auto">

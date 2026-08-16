@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { Plus, Trash2, Loader2 } from "lucide-react";
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
 import { toast } from "sonner";
@@ -16,11 +17,17 @@ export default function CGPACalculator() {
   const [newSubjects, setNewSubjects] = useState([{ name: "", credits: 3, grade: "A", semester: 1 }]);
   const [selectedSemester, setSelectedSemester] = useState(1);
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!user) return;
-    supabase.from("semester_grades").select("*").eq("user_id", user.id).order("semester").order("subject_name")
-      .then(({ data }) => { setGrades(data || []); setLoading(false); });
+    const { data } = await supabase.from("semester_grades").select("*").eq("user_id", user.id).order("semester").order("subject_name");
+    setGrades(data || []);
+    setLoading(false);
   }, [user]);
+
+  useEffect(() => { load(); }, [load]);
+
+  useRealtimeSync("cgpa", ["semester_grades"], load, !!user);
+
 
   const semesters = [...new Set(grades.map(g => g.semester))].sort();
   const semesterGPAs = semesters.map(sem => {

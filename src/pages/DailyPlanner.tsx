@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { Play, Pause, RotateCcw, AlertTriangle, CheckCircle2, Circle, Plus, Loader2 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
@@ -44,23 +45,25 @@ export default function DailyPlanner() {
     return () => clearInterval(interval);
   }, [isRunning, isBreak]);
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!user) return;
-    const load = async () => {
-      const [tasksRes, attRes, hoursRes, ttRes] = await Promise.all([
-        supabase.from("tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
-        supabase.from("attendance").select("*").eq("user_id", user.id),
-        supabase.from("study_hours").select("*").eq("user_id", user.id).order("date", { ascending: true }).limit(7),
-        supabase.from("timetable").select("*").eq("user_id", user.id).order("day").order("slot_index"),
-      ]);
-      setTasks(tasksRes.data || []);
-      setAttendance(attRes.data || []);
-      setStudyHours(hoursRes.data || []);
-      setTimetable(ttRes.data || []);
-      setLoading(false);
-    };
-    load();
+    const [tasksRes, attRes, hoursRes, ttRes] = await Promise.all([
+      supabase.from("tasks").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
+      supabase.from("attendance").select("*").eq("user_id", user.id),
+      supabase.from("study_hours").select("*").eq("user_id", user.id).order("date", { ascending: true }).limit(7),
+      supabase.from("timetable").select("*").eq("user_id", user.id).order("day").order("slot_index"),
+    ]);
+    setTasks(tasksRes.data || []);
+    setAttendance(attRes.data || []);
+    setStudyHours(hoursRes.data || []);
+    setTimetable(ttRes.data || []);
+    setLoading(false);
   }, [user]);
+
+  useEffect(() => { load(); }, [load]);
+
+  useRealtimeSync("planner", ["tasks", "attendance", "study_hours", "timetable"], load, !!user);
+
 
   const addTask = async () => {
     if (!newTask.trim() || !user) return;

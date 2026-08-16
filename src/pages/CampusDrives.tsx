@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { Building2, Calendar, IndianRupee, GraduationCap, Filter, Loader2 } from "lucide-react";
 
 type Status = "all" | "upcoming" | "applied" | "shortlisted" | "placed";
@@ -25,21 +26,23 @@ export default function CampusDrives() {
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!user) return;
-    const load = async () => {
-      const [drivesRes, appsRes, profRes] = await Promise.all([
-        supabase.from("campus_drives").select("*").order("date", { ascending: false }),
-        supabase.from("drive_applications").select("*").eq("user_id", user.id),
-        supabase.from("profiles").select("cgpa").eq("user_id", user.id).single(),
-      ]);
-      setDrives(drivesRes.data || []);
-      setApplications(appsRes.data || []);
-      setProfile(profRes.data);
-      setLoading(false);
-    };
-    load();
+    const [drivesRes, appsRes, profRes] = await Promise.all([
+      supabase.from("campus_drives").select("*").order("date", { ascending: false }),
+      supabase.from("drive_applications").select("*").eq("user_id", user.id),
+      supabase.from("profiles").select("cgpa").eq("user_id", user.id).maybeSingle(),
+    ]);
+    setDrives(drivesRes.data || []);
+    setApplications(appsRes.data || []);
+    setProfile(profRes.data);
+    setLoading(false);
   }, [user]);
+
+  useEffect(() => { load(); }, [load]);
+
+  useRealtimeSync("drives", ["campus_drives", "drive_applications", "profiles"], load, !!user);
+
 
   const cgpaCheck = cgpaInput ? parseFloat(cgpaInput) : null;
   const userCgpa = profile?.cgpa || 0;
