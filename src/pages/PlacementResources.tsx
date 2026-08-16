@@ -7,6 +7,9 @@ import {
 } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { toast } from "sonner";
+import AdSlot from "@/components/AdSlot";
+import { AD_SLOTS } from "@/lib/ads";
+
 import {
   resources, companyGuides, roadmaps, studyPlans, mustHaveApps, allCategories,
 } from "@/lib/placementResources";
