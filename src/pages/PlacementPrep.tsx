@@ -19,40 +19,42 @@ export default function PlacementPrep() {
   const [quizScores, setQuizScores] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const load = useCallback(async () => {
     if (!user) return;
-    const load = async () => {
-      const [checkRes, intRes, scoresRes] = await Promise.all([
-        supabase.from("resume_checklist").select("*").eq("user_id", user.id).order("created_at"),
-        supabase.from("mock_interviews").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
-        supabase.from("quiz_scores").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
-      ]);
-      let items = checkRes.data || [];
-      // Initialize default checklist if empty
-      if (items.length === 0) {
-        const defaults = [
-          "Contact info at the top (Name, Email, Phone, LinkedIn, GitHub)",
-          "Professional summary in 2-3 lines",
-          "Education section with CGPA",
-          "Skills section with categorized technical skills",
-          "Projects with tech stack and impact metrics",
-          "Work experience / internships",
-          "Certifications with verification links",
-          "ATS-friendly format (no tables, images, or headers)",
-          "Consistent formatting and font usage",
-          "Single page with proper margins",
-        ];
-        const rows = defaults.map(text => ({ user_id: user.id, item_text: text, checked: false }));
-        const { data } = await supabase.from("resume_checklist").insert(rows).select();
-        items = data || [];
-      }
-      setChecklist(items);
-      setMockInterviews(intRes.data || []);
-      setQuizScores(scoresRes.data || []);
-      setLoading(false);
-    };
-    load();
+    const [checkRes, intRes, scoresRes] = await Promise.all([
+      supabase.from("resume_checklist").select("*").eq("user_id", user.id).order("created_at"),
+      supabase.from("mock_interviews").select("*").eq("user_id", user.id).order("created_at", { ascending: false }),
+      supabase.from("quiz_scores").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(5),
+    ]);
+    let items = checkRes.data || [];
+    // Initialize default checklist if empty
+    if (items.length === 0) {
+      const defaults = [
+        "Contact info at the top (Name, Email, Phone, LinkedIn, GitHub)",
+        "Professional summary in 2-3 lines",
+        "Education section with CGPA",
+        "Skills section with categorized technical skills",
+        "Projects with tech stack and impact metrics",
+        "Work experience / internships",
+        "Certifications with verification links",
+        "ATS-friendly format (no tables, images, or headers)",
+        "Consistent formatting and font usage",
+        "Single page with proper margins",
+      ];
+      const rows = defaults.map(text => ({ user_id: user.id, item_text: text, checked: false }));
+      const { data } = await supabase.from("resume_checklist").insert(rows).select();
+      items = data || [];
+    }
+    setChecklist(items);
+    setMockInterviews(intRes.data || []);
+    setQuizScores(scoresRes.data || []);
+    setLoading(false);
   }, [user]);
+
+  useEffect(() => { load(); }, [load]);
+
+  useRealtimeSync("prep", ["resume_checklist", "mock_interviews", "quiz_scores"], load, !!user);
+
 
   const handleAnswer = (idx: number) => {
     setSelected(idx);
