@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { Progress } from "@/components/ui/progress";
 import { ExternalLink, Github, Award, Plus, Loader2, Trash2 } from "lucide-react";
 import { toast } from "sonner";

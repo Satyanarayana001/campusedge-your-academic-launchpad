@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { aptitudeQuestions, hrQuestions } from "@/lib/mockData";
 import { ChevronDown, ChevronUp, CheckSquare, Square, Clock, Trophy, Loader2 } from "lucide-react";
 import { toast } from "sonner";

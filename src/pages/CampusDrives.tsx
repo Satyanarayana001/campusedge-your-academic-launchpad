@@ -1,6 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/contexts/AuthContext";
+import { useRealtimeSync } from "@/hooks/useRealtimeSync";
 import { Building2, Calendar, IndianRupee, GraduationCap, Filter, Loader2 } from "lucide-react";
 
 type Status = "all" | "upcoming" | "applied" | "shortlisted" | "placed";
