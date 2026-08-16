@@ -148,6 +148,8 @@ export default function Community() {
         </div>
 
         <div className="space-y-6">
+          <AdSlot slot={AD_SLOTS.communitySidebar} format="rectangle" />
+
           <div className="glass-card rounded-xl p-5">
             <h2 className="font-display font-semibold text-foreground text-lg mb-4 flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" /> Study Groups
