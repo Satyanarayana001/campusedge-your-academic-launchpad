@@ -6,7 +6,7 @@
 // Until ADSENSE_CLIENT is filled in, placeholders are shown instead of ads.
 // ─────────────────────────────────────────────────────────────
 
-export const ADSENSE_CLIENT = ""; // e.g. "ca-pub-1234567890123456"
+export const ADSENSE_CLIENT = "ca-pub-4865540042343620"; // e.g. "ca-pub-1234567890123456"
 
 export const AD_SLOTS = {
   dashboardBanner: "", // e.g. "1234567890"
