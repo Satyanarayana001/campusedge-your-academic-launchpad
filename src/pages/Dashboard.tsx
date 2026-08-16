@@ -130,6 +130,10 @@ export default function Dashboard() {
         ))}
       </div>
 
+      <AdSlot slot={AD_SLOTS.dashboardBanner} />
+
+
+
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Tasks */}
         <div className="glass-card rounded-xl p-5">
