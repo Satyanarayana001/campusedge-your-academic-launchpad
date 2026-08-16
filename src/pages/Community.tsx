@@ -4,6 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { studyGroups, seniorTips } from "@/lib/mockData";
 import { Heart, MessageCircle, Users, Lightbulb, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import AdSlot from "@/components/AdSlot";
+import { AD_SLOTS } from "@/lib/ads";
+
 
 function getAuthorName(profile: any) {
   if (profile?.full_name && !profile.full_name.includes("@")) return profile.full_name;
