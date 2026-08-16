@@ -4,6 +4,9 @@ import { useAuth } from "@/contexts/AuthContext";
 import { studyGroups, seniorTips } from "@/lib/mockData";
 import { Heart, MessageCircle, Users, Lightbulb, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import AdSlot from "@/components/AdSlot";
+import { AD_SLOTS } from "@/lib/ads";
+
 
 function getAuthorName(profile: any) {
   if (profile?.full_name && !profile.full_name.includes("@")) return profile.full_name;
@@ -145,6 +148,8 @@ export default function Community() {
         </div>
 
         <div className="space-y-6">
+          <AdSlot slot={AD_SLOTS.communitySidebar} format="rectangle" />
+
           <div className="glass-card rounded-xl p-5">
             <h2 className="font-display font-semibold text-foreground text-lg mb-4 flex items-center gap-2">
               <Users className="h-5 w-5 text-primary" /> Study Groups
