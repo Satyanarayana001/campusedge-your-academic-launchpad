@@ -26,15 +26,16 @@ export default function AppLayout({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { signOut, user } = useAuth();
 
-  useEffect(() => {
+  const loadProfile = useCallback(async () => {
     if (!user) return;
-    supabase
-      .from("profiles")
-      .select("*")
-      .eq("user_id", user.id)
-      .single()
-      .then(({ data }) => setProfile(data));
+    const { data } = await supabase.from("profiles").select("*").eq("user_id", user.id).maybeSingle();
+    setProfile(data);
   }, [user]);
+
+  useEffect(() => { loadProfile(); }, [loadProfile]);
+
+  useRealtimeSync("layout-profile", ["profiles"], loadProfile, !!user);
+
 
   const toggleDark = () => {
     setDark(!dark);
