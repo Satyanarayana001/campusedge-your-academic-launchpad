@@ -1,12 +1,16 @@
 // ─────────────────────────────────────────────────────────────
 // Google AdSense configuration
-// 1. Sign up at https://adsense.google.com and get approved.
-// 2. Paste your publisher ID below (looks like "ca-pub-1234567890123456").
-// 3. Create ad units in AdSense and paste their slot IDs below.
-// Until ADSENSE_CLIENT is filled in, placeholders are shown instead of ads.
+// 1. Publisher ID below (ca-pub-...).
+// 2. AUTO_ADS = true serves live ads immediately (no slot IDs needed) —
+//    turn "Auto ads" ON for your site in the AdSense dashboard.
+// 3. Optionally create ad units in AdSense and paste their slot IDs below
+//    for precise control over each placement.
 // ─────────────────────────────────────────────────────────────
 
-export const ADSENSE_CLIENT = "ca-pub-4865540042343620"; // e.g. "ca-pub-1234567890123456"
+export const ADSENSE_CLIENT = "ca-pub-4865540042343620";
+
+/** Serve ads in every placement even before per-unit slot IDs exist. */
+export const AUTO_ADS = true;
 
 export const AD_SLOTS = {
   dashboardBanner: "", // e.g. "1234567890"
@@ -31,4 +35,16 @@ export function loadAdSenseScript() {
   s.src = `https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${ADSENSE_CLIENT}`;
   document.head.appendChild(s);
   scriptLoaded = true;
+}
+
+/** Ask AdSense to fill the next un-filled <ins> on the page. */
+export function requestAd() {
+  if (!adsEnabled() || typeof window === "undefined") return;
+  loadAdSenseScript();
+  try {
+    // @ts-expect-error adsbygoogle is injected by the AdSense script
+    (window.adsbygoogle = window.adsbygoogle || []).push({});
+  } catch {
+    /* blocked or not ready */
+  }
 }
