@@ -33,7 +33,7 @@ export default function Community() {
       const userIds = [...new Set(postsList.map((p: any) => p.user_id))];
       let profileMap: Record<string, any> = {};
       if (userIds.length) {
-        const { data: profs } = await supabase.from("profiles").select("user_id, full_name, avatar_url").in("user_id", userIds);
+        const { data: profs } = await supabase.rpc("get_public_profiles", { _user_ids: userIds as string[] });
         (profs || []).forEach((p: any) => { profileMap[p.user_id] = p; });
       }
       setPosts(postsList.map((p: any) => ({ ...p, _profile: profileMap[p.user_id] || null })));
@@ -50,8 +50,8 @@ export default function Community() {
           return;
         }
         const row: any = payload.new;
-        const { data: prof } = await supabase
-          .from("profiles").select("user_id, full_name, avatar_url").eq("user_id", row.user_id).maybeSingle();
+        const { data: profs } = await supabase.rpc("get_public_profiles", { _user_ids: [row.user_id] });
+        const prof = (profs || [])[0] || null;
         setPosts((prev) => {
           const exists = prev.some((p) => p.id === row.id);
           if (exists) return prev.map((p) => (p.id === row.id ? { ...p, ...row, _profile: p._profile || prof } : p));
