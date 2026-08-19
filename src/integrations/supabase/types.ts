@@ -604,7 +604,14 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_public_profiles: {
+        Args: { _user_ids: string[] }
+        Returns: {
+          avatar_url: string
+          full_name: string
+          user_id: string
+        }[]
+      }
     }
     Enums: {
       drive_status: "upcoming" | "applied" | "shortlisted" | "placed"
